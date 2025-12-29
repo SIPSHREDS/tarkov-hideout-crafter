@@ -1,0 +1,60 @@
+{
+  "name": "tarkov-hideout-crafter",
+  "version": "1.0.0",
+  "description": "Tarkov Hideout Craft Profit Calculator - Track and optimize your hideout crafting profits",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win --x64"
+  },
+  "keywords": [
+    "tarkov",
+    "hideout",
+    "crafting",
+    "profit",
+    "calculator"
+  ],
+  "author": "SIPSHREDS",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.tarkov.hideout.crafter",
+    "productName": "Tarkov Hideout Crafter",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tarkov Hideout Crafter"
+    },
+    "files": [
+      "index.html",
+      "renderer.js",
+      "main.js",
+      "*.webp",
+      "*.png",
+      "*.ico"
+    ]
+  }
+}
