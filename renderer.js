@@ -21,6 +21,21 @@ let isLoadingAPI = false;
 
 // ====== API INTEGRATION ======
 
+function formatCraftTime(minutes) {
+  if (minutes < 60) {
+    return `${minutes}min`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  
+  return `${hours}h ${remainingMinutes}min`;
+}
+
 async function fetchCraftDataFromAPI() {
   if (isLoadingAPI) return;
   isLoadingAPI = true;
@@ -351,8 +366,15 @@ function displayCrafts() {
   tbody.appendChild(statusRow);
   
   filteredCrafts.forEach(craft => {
+    // Safety check: if craftTime is > 1000, it's likely in seconds, convert it
+    let craftTime = craft.craftTime;
+    if (craftTime > 1000) {
+      craftTime = Math.round(craftTime / 60);
+      craft.craftTime = craftTime; // Update the craft object
+    }
+    
     const profit = craft.sellPrice - craft.materialCost;
-    const profitPerHour = Math.round((profit / craft.craftTime) * 60);
+    const profitPerHour = Math.round((profit / craftTime) * 60);
     const row = document.createElement('tr');
     
     const isSelected = compareSelection.includes(craft.id);
@@ -376,7 +398,7 @@ function displayCrafts() {
       <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">
         ₽${profit.toLocaleString()}
       </td>
-      <td>${craft.craftTime}min</td>
+      <td>${formatCraftTime(craftTime)}</td>
       <td class="${profitPerHour >= 0 ? 'profit-positive' : 'profit-negative'}">
         ₽${profitPerHour.toLocaleString()}/h
       </td>
@@ -393,6 +415,9 @@ function displayCrafts() {
     `;
     tbody.appendChild(row);
   });
+  
+  // Save any converted times
+  saveCrafts();
 }
 
 function showCraftDetails(craftId) {
@@ -417,7 +442,7 @@ function showCraftDetails(craftId) {
       <h3>${craft.name}</h3>
       <p><strong>Output:</strong> ${craft.outputQuantity}x ${craft.name}</p>
       <p><strong>Sell Price:</strong> ₽${craft.sellPrice.toLocaleString()}</p>
-      <p><strong>Craft Time:</strong> ${craft.craftTime} minutes</p>
+      <p><strong>Craft Time:</strong> ${formatCraftTime(craft.craftTime)}</p>
       ${materialsHTML}
       <div style="margin-top: 15px; padding: 10px; background: ${profit >= 0 ? '#1a4d2e' : '#4d1a1a'}; border-radius: 5px;">
         <p><strong>Total Material Cost:</strong> ₽${craft.materialCost.toLocaleString()}</p>
@@ -584,7 +609,7 @@ function showComparison() {
       </div>
       <div class="compare-stat">
         <span>Time:</span>
-        <span ${craft1.craftTime < craft2.craftTime ? 'class="compare-winner"' : ''}>${craft1.craftTime}min</span>
+        <span ${craft1.craftTime < craft2.craftTime ? 'class="compare-winner"' : ''}>${formatCraftTime(craft1.craftTime)}</span>
       </div>
       <div class="compare-stat">
         <span>Profit/Hour:</span>
