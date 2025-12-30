@@ -188,6 +188,9 @@ function processCraftData() {
   saveCrafts();
   console.log(`✅ Processed ${craftCount} crafts across all stations`);
   
+  // Calculate station rankings for hot/cold indicators
+  calculateStationRankings();
+  
   // Refresh display if viewing a station
   if (currentStation) {
     applyFilter();
@@ -195,6 +198,68 @@ function processCraftData() {
     // Update stations view to show new craft counts
     renderStations();
   }
+}
+
+function calculateStationRankings() {
+  const rankings = [];
+  
+  stations.forEach(station => {
+    const stationCrafts = crafts[station.id] || [];
+    if (stationCrafts.length === 0) return;
+    
+    // Calculate average profit per hour for this station
+    let totalProfitPerHour = 0;
+    let profitableCrafts = 0;
+    
+    stationCrafts.forEach(craft => {
+      const profit = craft.sellPrice - craft.materialCost;
+      if (profit > 0 && craft.craftTime > 0) {
+        const profitPerHour = (profit / craft.craftTime) * 60;
+        totalProfitPerHour += profitPerHour;
+        profitableCrafts++;
+      }
+    });
+    
+    const avgProfitPerHour = profitableCrafts > 0 ? Math.round(totalProfitPerHour / profitableCrafts) : 0;
+    
+    rankings.push({
+      stationId: station.id,
+      stationName: station.name,
+      avgProfitPerHour: avgProfitPerHour,
+      profitableCrafts: profitableCrafts,
+      totalCrafts: stationCrafts.length
+    });
+  });
+  
+  // Sort by average profit per hour
+  rankings.sort((a, b) => b.avgProfitPerHour - a.avgProfitPerHour);
+  
+  // Assign tiers
+  rankings.forEach((rank, index) => {
+    if (index === 0 && rank.avgProfitPerHour > 15000) {
+      rank.tier = 'ultra-hot'; // 🔥🔥🔥 Top station
+    } else if (rank.avgProfitPerHour > 15000) {
+      rank.tier = 'hot'; // 🔥🔥
+    } else if (rank.avgProfitPerHour > 8000) {
+      rank.tier = 'warm'; // 🔥
+    } else {
+      rank.tier = 'cold'; // ❄️
+    }
+  });
+  
+  // Store rankings globally
+  window.stationRankings = rankings;
+}
+
+function getStationTier(stationId) {
+  if (!window.stationRankings) return 'cold';
+  const ranking = window.stationRankings.find(r => r.stationId === stationId);
+  return ranking ? ranking.tier : 'cold';
+}
+
+function getStationStats(stationId) {
+  if (!window.stationRankings) return null;
+  return window.stationRankings.find(r => r.stationId === stationId);
 }
 
 function getAPIStatus() {
@@ -305,13 +370,40 @@ function renderStations() {
   
   stations.forEach(station => {
     const count = crafts[station.id] ? crafts[station.id].length : 0;
+    const tier = getStationTier(station.id);
+    const stats = getStationStats(station.id);
+    
     const card = document.createElement('div');
     card.className = 'station-card';
     card.onclick = () => showCraftsView(station.id);
+    
+    // Add tier class for styling
+    if (tier !== 'cold') {
+      card.classList.add(`station-${tier}`);
+    }
+    
+    // Fire indicator based on tier
+    let fireIndicator = '';
+    if (tier === 'ultra-hot') {
+      fireIndicator = '<div class="fire-indicator ultra">🔥🔥🔥</div>';
+    } else if (tier === 'hot') {
+      fireIndicator = '<div class="fire-indicator hot">🔥🔥</div>';
+    } else if (tier === 'warm') {
+      fireIndicator = '<div class="fire-indicator warm">🔥</div>';
+    }
+    
+    // Profit info
+    let profitInfo = '';
+    if (stats && stats.avgProfitPerHour > 0) {
+      profitInfo = `<div class="station-profit">Avg: ₽${stats.avgProfitPerHour.toLocaleString()}/h</div>`;
+    }
+    
     card.innerHTML = `
+      ${fireIndicator}
       <img src="${station.icon}" class="station-icon" alt="${station.name}">
       <div class="station-name">${station.name}</div>
       <div class="station-crafts-count">${count} craft${count !== 1 ? 's' : ''}</div>
+      ${profitInfo}
     `;
     grid.appendChild(card);
   });
