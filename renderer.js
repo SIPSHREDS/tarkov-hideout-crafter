@@ -266,6 +266,32 @@ function renderStations() {
   const grid = document.getElementById('stationsGrid');
   grid.innerHTML = '';
   
+  // Add update notification banner if not dismissed
+  const updateDismissed = localStorage.getItem('updateNotificationDismissed');
+  if (!updateDismissed) {
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+      background: linear-gradient(135deg, #f4a460 0%, #d2691e 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    `;
+    banner.innerHTML = `
+      <button onclick="dismissUpdateNotification()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.3); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-weight: bold;">✕</button>
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">🎉 V2.0 UPDATE - Live Pricing Now Available!</div>
+      <div style="font-size: 14px; line-height: 1.5;">
+        - Live API integration for real-time flea market prices<br>
+        - Click any craft to see full material breakdowns<br>
+        - 100+ crafts added across all hideout stations<br>
+        - No more manual updates needed!
+      </div>
+    `;
+    grid.appendChild(banner);
+  }
+  
   stations.forEach(station => {
     const count = crafts[station.id] ? crafts[station.id].length : 0;
     const card = document.createElement('div');
@@ -278,6 +304,11 @@ function renderStations() {
     `;
     grid.appendChild(card);
   });
+}
+
+function dismissUpdateNotification() {
+  localStorage.setItem('updateNotificationDismissed', 'true');
+  renderStations();
 }
 
 function showStationView() {
