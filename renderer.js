@@ -409,7 +409,8 @@ function showCraftDetails(craftId) {
   const profitPerHour = Math.round((profit / craft.craftTime) * 60);
   
   const detailsHTML = `
-    <div style="padding: 20px;">
+    <div style="padding: 20px; position: relative;">
+      <button onclick="closeModal()" style="position: absolute; top: 10px; right: 10px; background: #dc2626; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
       <h3>${craft.name}</h3>
       <p><strong>Output:</strong> ${craft.outputQuantity}x ${craft.name}</p>
       <p><strong>Sell Price:</strong> ₽${craft.sellPrice.toLocaleString()}</p>
