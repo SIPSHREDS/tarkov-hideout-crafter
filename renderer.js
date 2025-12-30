@@ -191,12 +191,23 @@ function processCraftData() {
   // Refresh display if viewing a station
   if (currentStation) {
     applyFilter();
+  } else {
+    // Update stations view to show new craft counts
+    renderStations();
   }
 }
 
 function getAPIStatus() {
+  if (isLoadingAPI) {
+    return '⏳ Loading API data...';
+  }
+  
+  if (!apiData || apiData.length === 0) {
+    return '⚠️ No API data loaded';
+  }
+  
   if (!lastAPIUpdate) {
-    return '📋 No API data loaded';
+    return '🟢 API data loaded';
   }
   
   const minutes = Math.floor((new Date() - lastAPIUpdate) / 60000);
