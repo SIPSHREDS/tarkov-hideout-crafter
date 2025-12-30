@@ -145,119 +145,6 @@ let sortDirection = {};
 let currentFilter = 'all';
 let compareMode = false;
 let compareSelection = [];
-let apiPrices = null;
-let lastPriceUpdate = null;
-
-// ====== NEW: API PRICE FETCHING ======
-
-async function fetchPricesFromAPI() {
-  const query = `{
-    items {
-      name
-      avg24hPrice
-      lastLowPrice
-    }
-  }`;
-  
-  try {
-    console.log('Fetching prices from tarkov.dev API...');
-    
-    // Set a timeout for the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch('https://api.tarkov.dev/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.data && data.data.items && data.data.items.length > 0) {
-      apiPrices = data.data.items;
-      lastPriceUpdate = new Date();
-      console.log(`✅ Successfully fetched ${apiPrices.length} item prices from API`);
-      updateCraftPricesFromAPI();
-      
-      // Refresh display if viewing a station
-      if (currentStation) {
-        applyFilter();
-      }
-      return true;
-    } else {
-      throw new Error('Invalid API response structure');
-    }
-  } catch (error) {
-    console.error('❌ API fetch failed:', error.message);
-    console.log('📋 Using manual prices as fallback');
-    apiPrices = null;
-    lastPriceUpdate = null;
-    return false;
-  }
-}
-
-function updateCraftPricesFromAPI() {
-  if (!apiPrices) return;
-  
-  let updatedCount = 0;
-  
-  // Loop through all stations and crafts
-  Object.keys(crafts).forEach(stationId => {
-    crafts[stationId].forEach(craft => {
-      // Try to find matching item in API data
-      const apiItem = apiPrices.find(item => 
-        item.name.toLowerCase() === craft.name.toLowerCase()
-      );
-      
-      if (apiItem && apiItem.avg24hPrice > 0) {
-        // Update sell price from API
-        craft.sellPrice = apiItem.avg24hPrice;
-        craft.priceSource = 'api';
-        updatedCount++;
-      } else {
-        // Keep manual price as fallback
-        craft.priceSource = 'manual';
-      }
-    });
-  });
-  
-  console.log(`Updated ${updatedCount} craft prices from API`);
-  saveCrafts();
-  
-  // Refresh display if we're viewing a station
-  if (currentStation) {
-    applyFilter();
-  }
-}
-
-function getPriceUpdateStatus() {
-  if (!lastPriceUpdate || !apiPrices) {
-    return '📋 Using manual prices';
-  }
-  
-  const minutes = Math.floor((new Date() - lastPriceUpdate) / 60000);
-  
-  if (minutes < 1) {
-    return '🟢 Live prices updated just now';
-  } else if (minutes < 60) {
-    return `🟢 Live prices updated ${minutes} min ago`;
-  } else {
-    const hours = Math.floor(minutes / 60);
-    return `🟡 Live prices updated ${hours}h ago`;
-  }
-}
-
-// ====== END NEW CODE ======
 
 // Theme toggle
 function toggleTheme() {
@@ -278,9 +165,6 @@ function init() {
   loadTheme();
   loadCrafts();
   renderStations();
-  
-  // Fetch API prices on load
-  fetchPricesFromAPI();
   
   // Add search listener
   const searchInput = document.getElementById('searchInput');
@@ -411,29 +295,12 @@ function displayCrafts() {
   noCrafts.classList.add('hidden');
   tbody.innerHTML = '';
   
-  // Add price update status header
-  const statusRow = document.createElement('tr');
-  statusRow.innerHTML = `
-    <td colspan="8" style="text-align: center; background: #1f1f1f; font-size: 12px; color: #888; padding: 8px;">
-      ${getPriceUpdateStatus()} | 
-      <button onclick="fetchPricesFromAPI()" style="background: none; border: none; color: #f4a460; cursor: pointer; text-decoration: underline;">
-        🔄 Refresh Prices
-      </button>
-      <br>
-      <span style="font-size: 11px; color: #666; margin-top: 5px; display: inline-block;">
-        Price Indicators: 🟢 = Live API Price | 🟡 = Manual Price
-      </span>
-    </td>
-  `;
-  tbody.appendChild(statusRow);
-  
   filteredCrafts.forEach(craft => {
     const profit = craft.sellPrice - craft.materialCost;
     const profitPerHour = Math.round((profit / craft.craftTime) * 60);
     const row = document.createElement('tr');
     
     const isSelected = compareSelection.includes(craft.id);
-    const priceIndicator = craft.priceSource === 'api' ? '🟢' : '🟡';
     
     row.innerHTML = `
       <td>
@@ -443,9 +310,7 @@ function displayCrafts() {
       </td>
       <td class="item-name">${craft.name}</td>
       <td class="price">₽${craft.materialCost.toLocaleString()}</td>
-      <td class="price" title="${craft.priceSource === 'api' ? 'Live API price' : 'Manual price'}">
-        ${priceIndicator} ₽${craft.sellPrice.toLocaleString()}
-      </td>
+      <td class="price">₽${craft.sellPrice.toLocaleString()}</td>
       <td class="${profit >= 0 ? 'profit-positive' : 'profit-negative'}">
         ₽${profit.toLocaleString()}
       </td>
@@ -528,12 +393,12 @@ function exportToCSV() {
   const station = stations.find(s => s.id === currentStation);
   const stationName = station ? station.name : 'Unknown';
   
-  let csv = 'Craft Name,Material Cost,Sell Price,Profit,Time (min),Profit/Hour,Favorite,Price Source\n';
+  let csv = 'Craft Name,Material Cost,Sell Price,Profit,Time (min),Profit/Hour,Favorite\n';
   
   (crafts[currentStation] || []).forEach(craft => {
     const profit = craft.sellPrice - craft.materialCost;
     const profitPerHour = Math.round((profit / craft.craftTime) * 60);
-    csv += `"${craft.name}",${craft.materialCost},${craft.sellPrice},${profit},${craft.craftTime},${profitPerHour},${craft.favorite ? 'Yes' : 'No'},${craft.priceSource || 'manual'}\n`;
+    csv += `"${craft.name}",${craft.materialCost},${craft.sellPrice},${profit},${craft.craftTime},${profitPerHour},${craft.favorite ? 'Yes' : 'No'}\n`;
   });
   
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -684,8 +549,7 @@ function saveCraft(e) {
     materialCost: parseInt(document.getElementById('materialCost').value),
     sellPrice: parseInt(document.getElementById('sellPrice').value),
     craftTime: parseInt(document.getElementById('craftTime').value),
-    favorite: false,
-    priceSource: 'manual' // User-added crafts default to manual
+    favorite: false
   };
   
   if (editingCraftId) {
@@ -693,7 +557,6 @@ function saveCraft(e) {
     const craft = crafts[currentStation].find(c => c.id === editingCraftId);
     if (craft) {
       Object.assign(craft, craftData);
-      craft.priceSource = 'manual'; // Mark as manually edited
     }
   } else {
     // Add new
