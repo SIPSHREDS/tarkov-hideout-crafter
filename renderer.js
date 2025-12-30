@@ -144,6 +144,9 @@ function processCraftData() {
     const sellPrice = outputItem.item?.avg24hPrice || outputItem.item?.lastLowPrice || 0;
     const outputQuantity = outputItem.count || 1;
     
+    // Convert duration from seconds to minutes (API returns seconds)
+    const craftTimeMinutes = Math.round((craft.duration || 0) / 60);
+    
     crafts[stationId].push({
       id: `craft-${craftCount++}`,
       name: outputItem.item?.name || 'Unknown',
@@ -151,7 +154,7 @@ function processCraftData() {
       materialCost: Math.round(materialCost),
       sellPrice: Math.round(sellPrice * outputQuantity),
       outputQuantity: outputQuantity,
-      craftTime: craft.duration || 0,
+      craftTime: craftTimeMinutes,
       stationLevel: craft.level || 1,
       favorite: false,
       priceSource: 'api'
