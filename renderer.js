@@ -497,6 +497,9 @@ function init() {
   loadCraftedHistory();
   renderStations();
   
+  // Check if first-time user
+  checkFirstTimeUser();
+  
   // Fetch API data
   fetchCraftDataFromAPI().then(() => {
     // Record price snapshot after API loads
@@ -1675,6 +1678,33 @@ function clearAllStats() {
   craftedHistory = [];
   saveCraftedHistory();
   renderStats();
+}
+
+// ====== HELP MODAL FUNCTIONS ======
+
+function showHelpModal() {
+  document.getElementById('helpModal').classList.add('active');
+}
+
+function closeHelpModal() {
+  const dontShow = document.getElementById('dontShowHelpAgain').checked;
+  if (dontShow) {
+    localStorage.setItem('hideHelpModal', 'true');
+  }
+  document.getElementById('helpModal').classList.remove('active');
+}
+
+function checkFirstTimeUser() {
+  const hideHelp = localStorage.getItem('hideHelpModal');
+  const hasVisited = localStorage.getItem('hasVisitedBefore');
+  
+  // Show help modal on first visit
+  if (!hideHelp && !hasVisited) {
+    setTimeout(() => {
+      showHelpModal();
+      localStorage.setItem('hasVisitedBefore', 'true');
+    }, 1000); // Show after 1 second delay
+  }
 }
 
 window.addEventListener('DOMContentLoaded', init);
