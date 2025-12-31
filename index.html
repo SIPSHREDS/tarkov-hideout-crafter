@@ -703,7 +703,7 @@
       </div>
     </div>
     <div class="header-controls">
-      <button class="theme-toggle" onclick="showCalculatorView()" style="margin-right: 10px;">📊 Calculator</button>
+      <button class="theme-toggle" onclick="showCalculatorView()" style="margin-right: 10px;">📊 Craft Planner</button>
       <button class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
     </div>
   </div>
@@ -802,11 +802,12 @@
   <div id="calculatorView" class="hidden">
     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
       <button class="back-button" onclick="showStationView()">← Back to Stations</button>
-      <h2 style="color: #f4a460; margin: 0;">📊 Profit Calculator</h2>
+      <h2 style="color: #f4a460; margin: 0;">📊 Craft Planner</h2>
     </div>
 
-    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #f4a460; box-shadow: 0 4px 8px rgba(244, 164, 96, 0.3);">
-      <h3 style="color: #f4a460; margin-bottom: 20px; text-align: center;">How many hours can you play?</h3>
+    <!-- Active Play Section -->
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 30px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #f4a460; box-shadow: 0 4px 8px rgba(244, 164, 96, 0.3);">
+      <h3 style="color: #f4a460; margin-bottom: 20px; text-align: center;">⚡ Active Play - How many hours can you play?</h3>
       
       <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
         <input type="number" id="hoursInput" min="0.5" max="24" step="0.5" value="3" 
@@ -819,11 +820,31 @@
       </div>
       
       <div style="text-align: center; font-size: 13px; color: #888;">
-        💡 We'll show you the best craft for each station based on current prices
+        💡 Find the best crafts to maximize profit while you're actively playing
+      </div>
+    </div>
+
+    <!-- Offline Section -->
+    <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #6366f1; box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);">
+      <h3 style="color: #818cf8; margin-bottom: 20px; text-align: center;">💤 Offline Crafts - How long will you be AFK?</h3>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <input type="number" id="offlineHoursInput" min="1" max="48" step="1" value="8" 
+               style="width: 120px; padding: 15px; font-size: 24px; text-align: center; background: #0f172a; border: 2px solid #6366f1; border-radius: 8px; color: #e0e0e0;">
+        <span style="font-size: 20px; color: #e0e0e0;">hours</span>
+        <button onclick="calculateOfflineCrafts()" 
+                style="padding: 15px 30px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 16px;">
+          Calculate
+        </button>
+      </div>
+      
+      <div style="text-align: center; font-size: 13px; color: #888;">
+        😴 Best long crafts to run while sleeping or away from game
       </div>
     </div>
 
     <div id="calculatorResults"></div>
+    <div id="offlineResults"></div>
   </div>
 
   <script src="renderer.js"></script>
