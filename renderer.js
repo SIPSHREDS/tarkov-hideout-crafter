@@ -18,6 +18,80 @@ let compareSelection = [];
 let apiData = null;
 let lastAPIUpdate = null;
 let isLoadingAPI = false;
+let priceHistory = {}; // Store historical price data
+
+// ====== PRICE HISTORY TRACKING ======
+
+function loadPriceHistory() {
+  const saved = localStorage.getItem('priceHistory');
+  if (saved) {
+    priceHistory = JSON.parse(saved);
+  }
+}
+
+function savePriceHistory() {
+  localStorage.setItem('priceHistory', JSON.stringify(priceHistory));
+}
+
+function recordPriceSnapshot() {
+  // Only record if we have API data
+  if (!apiData || apiData.length === 0) return;
+  
+  const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  
+  // Don't record multiple times per day
+  if (priceHistory[today]) return;
+  
+  const snapshot = {};
+  
+  // Record all craft prices
+  stations.forEach(station => {
+    const stationCrafts = crafts[station.id] || [];
+    stationCrafts.forEach(craft => {
+      if (craft.priceSource === 'api') {
+        const craftKey = `${station.id}:${craft.name}`;
+        snapshot[craftKey] = {
+          sellPrice: craft.sellPrice,
+          materialCost: craft.materialCost,
+          profit: craft.sellPrice - craft.materialCost,
+          profitPerHour: craft.craftTime > 0 ? ((craft.sellPrice - craft.materialCost) / craft.craftTime) * 60 : 0
+        };
+      }
+    });
+  });
+  
+  priceHistory[today] = snapshot;
+  savePriceHistory();
+  
+  // Keep only last 30 days
+  const dates = Object.keys(priceHistory).sort();
+  if (dates.length > 30) {
+    const toDelete = dates.slice(0, dates.length - 30);
+    toDelete.forEach(date => delete priceHistory[date]);
+    savePriceHistory();
+  }
+  
+  console.log(`📊 Price snapshot recorded for ${today}`);
+}
+
+function getPriceHistory(stationId, craftName, days = 7) {
+  const craftKey = `${stationId}:${craftName}`;
+  const allDates = Object.keys(priceHistory).sort();
+  const recentDates = allDates.slice(-days);
+  
+  const history = [];
+  recentDates.forEach(date => {
+    const snapshot = priceHistory[date];
+    if (snapshot && snapshot[craftKey]) {
+      history.push({
+        date: date,
+        ...snapshot[craftKey]
+      });
+    }
+  });
+  
+  return history;
+}
 
 // ====== API INTEGRATION ======
 
@@ -482,6 +556,14 @@ function renderStations() {
   const grid = document.getElementById('stationsGrid');
   grid.innerHTML = '';
   
+  const stationView = document.getElementById('stationView');
+  
+  // Remove old hot deals if exists
+  const oldHotDeals = stationView.querySelector('.hot-deals-container');
+  if (oldHotDeals) {
+    oldHotDeals.remove();
+  }
+  
   // Add update notification banner if not dismissed
   const updateDismissed = localStorage.getItem('updateNotificationDismissed');
   if (!updateDismissed) {
@@ -505,17 +587,19 @@ function renderStations() {
         - No more manual updates needed!
       </div>
     `;
-    grid.appendChild(banner);
+    stationView.insertBefore(banner, grid);
   }
   
-  // Add Hot Deals Dashboard
+  // Add Hot Deals Dashboard BEFORE the grid
   const hotDealsHTML = renderHotDeals();
   if (hotDealsHTML) {
     const hotDealsContainer = document.createElement('div');
+    hotDealsContainer.className = 'hot-deals-container';
     hotDealsContainer.innerHTML = hotDealsHTML;
-    grid.appendChild(hotDealsContainer.firstElementChild);
+    stationView.insertBefore(hotDealsContainer, grid);
   }
   
+  // Now render station cards in the grid
   stations.forEach(station => {
     const count = crafts[station.id] ? crafts[station.id].length : 0;
     const tier = getStationTier(station.id);
