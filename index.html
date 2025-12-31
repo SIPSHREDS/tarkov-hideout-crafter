@@ -704,6 +704,7 @@
     </div>
     <div class="header-controls">
       <button class="theme-toggle" onclick="showCalculatorView()" style="margin-right: 10px;">📊 Craft Planner</button>
+      <button class="theme-toggle" onclick="showStatsView()" style="margin-right: 10px;">📈 My Stats</button>
       <button class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
     </div>
   </div>
@@ -845,6 +846,21 @@
 
     <div id="calculatorResults"></div>
     <div id="offlineResults"></div>
+  </div>
+
+  <!-- MY STATS VIEW -->
+  <div id="statsView" class="hidden">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="back-button" onclick="showStationView()">← Back to Stations</button>
+        <h2 style="color: #f4a460; margin: 0;">📈 My Stats</h2>
+      </div>
+      <button onclick="clearAllStats()" style="padding: 10px 20px; background: #dc2626; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">
+        🗑️ Clear All Data
+      </button>
+    </div>
+
+    <div id="statsContent"></div>
   </div>
 
   <script src="renderer.js"></script>
