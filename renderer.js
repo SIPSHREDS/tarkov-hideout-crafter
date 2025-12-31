@@ -687,10 +687,17 @@ function renderStations() {
     oldHotDeals.remove();
   }
   
+  // Remove old update banner if exists
+  const oldBanner = stationView.querySelector('.update-notification-banner');
+  if (oldBanner) {
+    oldBanner.remove();
+  }
+  
   // Add update notification banner if not dismissed
   const updateDismissed = localStorage.getItem('updateNotificationDismissed');
   if (!updateDismissed) {
     const banner = document.createElement('div');
+    banner.className = 'update-notification-banner';
     banner.style.cssText = `
       background: linear-gradient(135deg, #f4a460 0%, #d2691e 100%);
       color: white;
@@ -1307,7 +1314,7 @@ function renderCalculatorResults(results, bestOverall, hours) {
         <h3 style="margin: 0 0 15px 0; font-size: 24px; display: flex; align-items: center;">
           🏆 BEST OVERALL CHOICE
         </h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;" class="calculator-best-grid">
           <div>
             <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Station</div>
             <div style="font-size: 18px; font-weight: bold;">${bestOverall.station.name}</div>
@@ -1344,7 +1351,7 @@ function renderCalculatorResults(results, bestOverall, hours) {
     html += `
       <div style="padding: 20px; background: ${isBest ? 'rgba(244, 164, 96, 0.1)' : 'rgba(0,0,0,0.3)'}; border-radius: 8px; border: 2px solid ${isBest ? '#f4a460' : '#3a3a3a'}; position: relative;">
         ${isBest ? '<div style="position: absolute; top: 10px; right: 10px; background: #f4a460; color: #1a1a1a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">🏆 BEST</div>' : ''}
-        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;" class="calculator-result-card">
           <div>
             <div style="font-size: 18px; font-weight: bold; color: #f4a460;">${result.station.name}</div>
           </div>
@@ -1451,7 +1458,7 @@ function renderOfflineResults(results, hours) {
     html += `
       <div style="padding: 20px; background: ${isTop ? 'rgba(99, 102, 241, 0.15)' : 'rgba(0,0,0,0.3)'}; border-radius: 8px; border: 2px solid ${isTop ? '#6366f1' : '#374151'}; position: relative;">
         ${index === 0 ? '<div style="position: absolute; top: 10px; right: 10px; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">👑 TOP PICK</div>' : ''}
-        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;" class="calculator-result-card">
           <div>
             <div style="font-size: 18px; font-weight: bold; color: #818cf8;">${result.station.name}</div>
           </div>
@@ -1585,7 +1592,7 @@ function renderStats() {
   
   let html = `
     <!-- Summary Cards -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;" class="stats-summary-grid">
       <div style="background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); padding: 25px; border-radius: 12px; color: #1a1a1a;">
         <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Today</div>
         <div style="font-size: 32px; font-weight: bold;">₽${todayProfit.toLocaleString()}</div>
