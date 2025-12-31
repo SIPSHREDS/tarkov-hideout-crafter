@@ -703,6 +703,7 @@
       </div>
     </div>
     <div class="header-controls">
+      <button class="theme-toggle" onclick="showCalculatorView()" style="margin-right: 10px;">📊 Calculator</button>
       <button class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
     </div>
   </div>
@@ -793,7 +794,36 @@
           <button type="button" class="cancel-btn" onclick="closeModal()">❌ Cancel</button>
         </div>
       </form>
+      <div id="craftDetails" style="display: none;"></div>
     </div>
+  </div>
+
+  <!-- CALCULATOR VIEW -->
+  <div id="calculatorView" class="hidden">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+      <button class="back-button" onclick="showStationView()">← Back to Stations</button>
+      <h2 style="color: #f4a460; margin: 0;">📊 Profit Calculator</h2>
+    </div>
+
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #f4a460; box-shadow: 0 4px 8px rgba(244, 164, 96, 0.3);">
+      <h3 style="color: #f4a460; margin-bottom: 20px; text-align: center;">How many hours can you play?</h3>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <input type="number" id="hoursInput" min="0.5" max="24" step="0.5" value="3" 
+               style="width: 120px; padding: 15px; font-size: 24px; text-align: center; background: #1f1f1f; border: 2px solid #f4a460; border-radius: 8px; color: #e0e0e0;">
+        <span style="font-size: 20px; color: #e0e0e0;">hours</span>
+        <button onclick="calculateOptimalCrafts()" 
+                style="padding: 15px 30px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border: none; border-radius: 8px; color: #1a1a1a; font-weight: bold; cursor: pointer; font-size: 16px;">
+          Calculate
+        </button>
+      </div>
+      
+      <div style="text-align: center; font-size: 13px; color: #888;">
+        💡 We'll show you the best craft for each station based on current prices
+      </div>
+    </div>
+
+    <div id="calculatorResults"></div>
   </div>
 
   <script src="renderer.js"></script>
