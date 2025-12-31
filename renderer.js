@@ -93,6 +93,121 @@ function getPriceHistory(stationId, craftName, days = 7) {
   return history;
 }
 
+function renderPriceChart(stationId, craftName) {
+  const history = getPriceHistory(stationId, craftName, 7);
+  
+  if (history.length < 2) {
+    return '<div style="padding: 15px; background: rgba(244, 164, 96, 0.1); border-radius: 6px; text-align: center; margin-top: 15px;"><p style="color: #888; font-size: 13px;">📊 Price history will appear here after 2+ days of tracking</p></div>';
+  }
+  
+  // Calculate dimensions and scales
+  const width = 500;
+  const height = 200;
+  const padding = 40;
+  
+  const maxProfit = Math.max(...history.map(h => h.profitPerHour));
+  const minProfit = Math.min(...history.map(h => h.profitPerHour));
+  const profitRange = maxProfit - minProfit || 1;
+  
+  // Create points for the line
+  const points = history.map((h, i) => {
+    const x = padding + (i / (history.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((h.profitPerHour - minProfit) / profitRange) * (height - 2 * padding);
+    return `${x},${y}`;
+  }).join(' ');
+  
+  // Determine trend
+  const firstProfit = history[0].profitPerHour;
+  const lastProfit = history[history.length - 1].profitPerHour;
+  const trend = lastProfit > firstProfit ? '📈 UP' : lastProfit < firstProfit ? '📉 DOWN' : '➡️ FLAT';
+  const trendColor = lastProfit > firstProfit ? '#4ade80' : lastProfit < firstProfit ? '#f87171' : '#888';
+  const changePercent = firstProfit > 0 ? (((lastProfit - firstProfit) / firstProfit) * 100).toFixed(1) : 0;
+  
+  // Format dates for X axis
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
+  
+  return `
+    <div style="margin-top: 20px; padding: 15px; background: rgba(244, 164, 96, 0.05); border-radius: 8px; border: 1px solid rgba(244, 164, 96, 0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4 style="color: #f4a460; margin: 0;">📊 ${history.length}-Day Price History</h4>
+        <div style="text-align: right;">
+          <div style="font-size: 14px; font-weight: bold; color: ${trendColor};">${trend} ${changePercent}%</div>
+          <div style="font-size: 11px; color: #888;">₽${Math.round(firstProfit).toLocaleString()} → ₽${Math.round(lastProfit).toLocaleString()}/h</div>
+        </div>
+      </div>
+      
+      <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="background: rgba(0,0,0,0.2); border-radius: 6px;">
+        <!-- Grid lines -->
+        ${[0, 0.25, 0.5, 0.75, 1].map(pct => {
+          const y = height - padding - pct * (height - 2 * padding);
+          const value = Math.round(minProfit + pct * profitRange);
+          return `
+            <line x1="${padding}" y1="${y}" x2="${width - padding}" y2="${y}" 
+                  stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            <text x="${padding - 5}" y="${y + 4}" fill="#888" font-size="10" text-anchor="end">
+              ₽${value.toLocaleString()}
+            </text>
+          `;
+        }).join('')}
+        
+        <!-- X axis labels -->
+        ${history.map((h, i) => {
+          const x = padding + (i / (history.length - 1)) * (width - 2 * padding);
+          return `
+            <text x="${x}" y="${height - 15}" fill="#888" font-size="10" text-anchor="middle">
+              ${formatDate(h.date)}
+            </text>
+          `;
+        }).join('')}
+        
+        <!-- Area under curve -->
+        <polygon points="${padding},${height - padding} ${points} ${width - padding},${height - padding}" 
+                 fill="url(#gradient)" opacity="0.3"/>
+        
+        <!-- Gradient definition -->
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#f4a460;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#f4a460;stop-opacity:0" />
+          </linearGradient>
+        </defs>
+        
+        <!-- Main line -->
+        <polyline points="${points}" fill="none" stroke="#f4a460" stroke-width="3"/>
+        
+        <!-- Data points -->
+        ${history.map((h, i) => {
+          const x = padding + (i / (history.length - 1)) * (width - 2 * padding);
+          const y = height - padding - ((h.profitPerHour - minProfit) / profitRange) * (height - 2 * padding);
+          return `
+            <circle cx="${x}" cy="${y}" r="4" fill="#f4a460" stroke="white" stroke-width="2">
+              <title>${formatDate(h.date)}: ₽${Math.round(h.profitPerHour).toLocaleString()}/h</title>
+            </circle>
+          `;
+        }).join('')}
+      </svg>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 12px;">
+        <div style="text-align: center;">
+          <div style="color: #888;">Highest</div>
+          <div style="color: #4ade80; font-weight: bold;">₽${Math.round(maxProfit).toLocaleString()}/h</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="color: #888;">Average</div>
+          <div style="color: #f4a460; font-weight: bold;">₽${Math.round(history.reduce((sum, h) => sum + h.profitPerHour, 0) / history.length).toLocaleString()}/h</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="color: #888;">Lowest</div>
+          <div style="color: #f87171; font-weight: bold;">₽${Math.round(minProfit).toLocaleString()}/h</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // ====== API INTEGRATION ======
 
 function formatCraftTime(minutes) {
@@ -378,10 +493,14 @@ function loadTheme() {
 function init() {
   loadTheme();
   loadCrafts();
+  loadPriceHistory();
   renderStations();
   
   // Fetch API data
-  fetchCraftDataFromAPI();
+  fetchCraftDataFromAPI().then(() => {
+    // Record price snapshot after API loads
+    recordPriceSnapshot();
+  });
   
   // Add search listener
   const searchInput = document.getElementById('searchInput');
@@ -802,6 +921,9 @@ function showCraftDetails(craftId) {
   const profit = craft.sellPrice - craft.materialCost;
   const profitPerHour = Math.round((profit / craft.craftTime) * 60);
   
+  // Get price chart HTML
+  const priceChartHTML = renderPriceChart(currentStation, craft.name);
+  
   const detailsHTML = `
     <div style="padding: 20px; position: relative;">
       <button onclick="closeModal()" style="position: absolute; top: 10px; right: 10px; background: #dc2626; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
@@ -815,6 +937,7 @@ function showCraftDetails(craftId) {
         <p><strong>Profit:</strong> <span style="color: ${profit >= 0 ? '#4ade80' : '#f87171'}">₽${profit.toLocaleString()}</span></p>
         <p><strong>Profit per Hour:</strong> <span style="color: ${profitPerHour >= 0 ? '#4ade80' : '#f87171'}">₽${profitPerHour.toLocaleString()}/h</span></p>
       </div>
+      ${priceChartHTML}
     </div>
   `;
   
