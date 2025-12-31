@@ -338,6 +338,146 @@ function saveCrafts() {
   localStorage.setItem('tarkovCrafts', JSON.stringify(crafts));
 }
 
+function getHotDeals() {
+  const allCrafts = [];
+  
+  // Collect all crafts from all stations
+  stations.forEach(station => {
+    const stationCrafts = crafts[station.id] || [];
+    stationCrafts.forEach(craft => {
+      const profit = craft.sellPrice - craft.materialCost;
+      const profitPerHour = craft.craftTime > 0 ? (profit / craft.craftTime) * 60 : 0;
+      
+      allCrafts.push({
+        ...craft,
+        stationName: station.name,
+        stationId: station.id,
+        profit: profit,
+        profitPerHour: profitPerHour
+      });
+    });
+  });
+  
+  // Filter only profitable crafts
+  const profitable = allCrafts.filter(c => c.profit > 0 && c.profitPerHour > 0);
+  
+  // Get top 3 by profit/hour
+  const topProfitPerHour = [...profitable]
+    .sort((a, b) => b.profitPerHour - a.profitPerHour)
+    .slice(0, 3);
+  
+  // Get quick money (under 60 min, sorted by profit/hour)
+  const quickMoney = [...profitable]
+    .filter(c => c.craftTime < 60)
+    .sort((a, b) => b.profitPerHour - a.profitPerHour)
+    .slice(0, 3);
+  
+  // Get passive income (over 60 min, sorted by profit/hour)
+  const passiveIncome = [...profitable]
+    .filter(c => c.craftTime >= 60)
+    .sort((a, b) => b.profitPerHour - a.profitPerHour)
+    .slice(0, 3);
+  
+  return {
+    topProfitPerHour,
+    quickMoney,
+    passiveIncome
+  };
+}
+
+function renderHotDeals() {
+  if (!apiData || apiData.length === 0) {
+    return ''; // Don't show if no API data
+  }
+  
+  const deals = getHotDeals();
+  
+  if (deals.topProfitPerHour.length === 0) {
+    return ''; // No profitable crafts
+  }
+  
+  const formatDeal = (craft) => {
+    return `
+      <div style="background: rgba(244, 164, 96, 0.1); padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(244, 164, 96, 0.3);" 
+           onclick="showCraftsView('${craft.stationId}')"
+           onmouseover="this.style.background='rgba(244, 164, 96, 0.2)'; this.style.borderColor='rgba(244, 164, 96, 0.5)';"
+           onmouseout="this.style.background='rgba(244, 164, 96, 0.1)'; this.style.borderColor='rgba(244, 164, 96, 0.3)';">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: bold; color: #f4a460; font-size: 14px;">${craft.name}</div>
+            <div style="font-size: 12px; color: #888; margin-top: 2px;">${craft.stationName} • ${formatCraftTime(craft.craftTime)}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: bold; color: #4caf50; font-size: 14px;">₽${Math.round(craft.profitPerHour).toLocaleString()}/h</div>
+            <div style="font-size: 12px; color: #888;">₽${Math.round(craft.profit).toLocaleString()} profit</div>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+  
+  let html = `
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #f4a460; box-shadow: 0 4px 8px rgba(244, 164, 96, 0.3);" class="hot-deals-widget">
+      <style>
+        body.light-theme .hot-deals-widget {
+          background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%) !important;
+          border-color: #d4844a !important;
+        }
+      </style>
+      <h2 style="color: #f4a460; margin-bottom: 20px; font-size: 22px; text-align: center;">
+        🔥 HOTTEST CRAFTS RIGHT NOW
+      </h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+  `;
+  
+  // Top Profit/Hour section
+  if (deals.topProfitPerHour.length > 0) {
+    html += `
+      <div>
+        <h3 style="color: #f4a460; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">💰</span> BEST PROFIT/HOUR
+        </h3>
+        ${deals.topProfitPerHour.map(formatDeal).join('')}
+      </div>
+    `;
+  }
+  
+  // Quick Money section
+  if (deals.quickMoney.length > 0) {
+    html += `
+      <div>
+        <h3 style="color: #f4a460; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">⚡</span> QUICK MONEY (Under 1h)
+        </h3>
+        ${deals.quickMoney.map(formatDeal).join('')}
+      </div>
+    `;
+  }
+  
+  // Passive Income section
+  if (deals.passiveIncome.length > 0) {
+    html += `
+      <div>
+        <h3 style="color: #f4a460; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center;">
+          <span style="margin-right: 8px;">💎</span> PASSIVE INCOME (Long Crafts)
+        </h3>
+        ${deals.passiveIncome.map(formatDeal).join('')}
+      </div>
+    `;
+  }
+  
+  html += `
+      </div>
+      <div style="text-align: center; margin-top: 15px; font-size: 12px; color: #888;">
+        Updated with live API prices • Click any craft to view details
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
 function renderStations() {
   const grid = document.getElementById('stationsGrid');
   grid.innerHTML = '';
@@ -366,6 +506,14 @@ function renderStations() {
       </div>
     `;
     grid.appendChild(banner);
+  }
+  
+  // Add Hot Deals Dashboard
+  const hotDealsHTML = renderHotDeals();
+  if (hotDealsHTML) {
+    const hotDealsContainer = document.createElement('div');
+    hotDealsContainer.innerHTML = hotDealsHTML;
+    grid.appendChild(hotDealsContainer.firstElementChild);
   }
   
   stations.forEach(station => {
