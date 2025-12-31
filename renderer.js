@@ -494,6 +494,7 @@ function init() {
   loadTheme();
   loadCrafts();
   loadPriceHistory();
+  loadCraftedHistory();
   renderStations();
   
   // Fetch API data
@@ -769,6 +770,7 @@ function showStationView() {
   document.getElementById('stationView').classList.remove('hidden');
   document.getElementById('craftsView').classList.add('hidden');
   document.getElementById('calculatorView').classList.add('hidden');
+  document.getElementById('statsView').classList.add('hidden');
   currentStation = null;
   currentFilter = 'all';
   compareMode = false;
@@ -780,6 +782,7 @@ function showCraftsView(stationId) {
   document.getElementById('stationView').classList.add('hidden');
   document.getElementById('craftsView').classList.remove('hidden');
   document.getElementById('calculatorView').classList.add('hidden');
+  document.getElementById('statsView').classList.add('hidden');
   currentFilter = 'all';
   
   // Reset filter buttons
@@ -896,6 +899,8 @@ function displayCrafts() {
             ${isSelected ? '✓ Selected' : 'Select'}
           </button>` :
           `<button class="edit-btn" onclick="showCraftDetails('${craft.id}')">Details</button>
+           <button style="background: #4ade80; color: #1a1a1a; padding: 6px 12px; margin-right: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;" 
+                   onclick="markAsCrafted('${craft.id}')">✓ Crafted</button>
            <button class="delete-btn" onclick="deleteCraft('${craft.id}')">Delete</button>`
         }
       </td>
@@ -1214,6 +1219,7 @@ function showCalculatorView() {
   document.getElementById('stationView').classList.add('hidden');
   document.getElementById('craftsView').classList.add('hidden');
   document.getElementById('calculatorView').classList.remove('hidden');
+  document.getElementById('statsView').classList.add('hidden');
   
   // Auto-calculate on view
   calculateOptimalCrafts();
@@ -1475,6 +1481,200 @@ function renderOfflineResults(results, hours) {
   `;
   
   container.innerHTML = html;
+}
+
+// ====== STATS TRACKING FUNCTIONS ======
+
+let craftedHistory = []; // Array of completed crafts
+
+function loadCraftedHistory() {
+  const saved = localStorage.getItem('craftedHistory');
+  if (saved) {
+    craftedHistory = JSON.parse(saved);
+  }
+}
+
+function saveCraftedHistory() {
+  localStorage.setItem('craftedHistory', JSON.stringify(craftedHistory));
+}
+
+function markAsCrafted(craftId) {
+  const craft = crafts[currentStation].find(c => c.id === craftId);
+  if (!craft) return;
+  
+  const profit = craft.sellPrice - craft.materialCost;
+  const profitPerHour = (profit / craft.craftTime) * 60;
+  
+  const completedCraft = {
+    id: `completed-${Date.now()}`,
+    craftId: craft.id,
+    name: craft.name,
+    station: currentStation,
+    stationName: stations.find(s => s.id === currentStation)?.name || 'Unknown',
+    profit: profit,
+    profitPerHour: profitPerHour,
+    craftTime: craft.craftTime,
+    materialCost: craft.materialCost,
+    sellPrice: craft.sellPrice,
+    timestamp: new Date().toISOString(),
+    date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
+  };
+  
+  craftedHistory.push(completedCraft);
+  saveCraftedHistory();
+  
+  // Show success message
+  alert(`✓ ${craft.name} marked as crafted!\nProfit: ₽${profit.toLocaleString()}\n\nView your stats in "My Stats" tab!`);
+}
+
+function showStatsView() {
+  document.getElementById('stationView').classList.add('hidden');
+  document.getElementById('craftsView').classList.add('hidden');
+  document.getElementById('calculatorView').classList.add('hidden');
+  document.getElementById('statsView').classList.remove('hidden');
+  
+  renderStats();
+}
+
+function renderStats() {
+  const container = document.getElementById('statsContent');
+  
+  if (craftedHistory.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); border-radius: 12px; border: 2px solid #3a3a3a;">
+        <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
+        <h3 style="color: #f4a460; margin-bottom: 15px;">No Crafts Tracked Yet</h3>
+        <p style="color: #888; margin-bottom: 25px;">Start tracking your profits by clicking "✓ Crafted" on any craft!</p>
+        <button onclick="showStationView()" style="padding: 12px 25px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border: none; border-radius: 6px; color: #1a1a1a; font-weight: bold; cursor: pointer;">
+          Go to Stations
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Calculate stats
+  const today = new Date().toISOString().split('T')[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const todayProfit = craftedHistory.filter(c => c.date === today).reduce((sum, c) => sum + c.profit, 0);
+  const weekProfit = craftedHistory.filter(c => c.date >= weekAgo).reduce((sum, c) => sum + c.profit, 0);
+  const monthProfit = craftedHistory.filter(c => c.date >= monthAgo).reduce((sum, c) => sum + c.profit, 0);
+  const allTimeProfit = craftedHistory.reduce((sum, c) => sum + c.profit, 0);
+  
+  // Top crafts
+  const craftCounts = {};
+  craftedHistory.forEach(c => {
+    if (!craftCounts[c.name]) {
+      craftCounts[c.name] = { count: 0, profit: 0, name: c.name };
+    }
+    craftCounts[c.name].count++;
+    craftCounts[c.name].profit += c.profit;
+  });
+  
+  const topCrafts = Object.values(craftCounts)
+    .sort((a, b) => b.profit - a.profit)
+    .slice(0, 5);
+  
+  // Recent activity (last 10)
+  const recentCrafts = [...craftedHistory].reverse().slice(0, 10);
+  
+  let html = `
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+      <div style="background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); padding: 25px; border-radius: 12px; color: #1a1a1a;">
+        <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">Today</div>
+        <div style="font-size: 32px; font-weight: bold;">₽${todayProfit.toLocaleString()}</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">${craftedHistory.filter(c => c.date === today).length} crafts</div>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); padding: 25px; border-radius: 12px; color: #1a1a1a;">
+        <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">This Week</div>
+        <div style="font-size: 32px; font-weight: bold;">₽${weekProfit.toLocaleString()}</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">${craftedHistory.filter(c => c.date >= weekAgo).length} crafts</div>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); padding: 25px; border-radius: 12px; color: white;">
+        <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">This Month</div>
+        <div style="font-size: 32px; font-weight: bold;">₽${monthProfit.toLocaleString()}</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">${craftedHistory.filter(c => c.date >= monthAgo).length} crafts</div>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%); padding: 25px; border-radius: 12px; color: white;">
+        <div style="font-size: 14px; opacity: 0.8; margin-bottom: 5px;">All Time</div>
+        <div style="font-size: 32px; font-weight: bold;">₽${allTimeProfit.toLocaleString()}</div>
+        <div style="font-size: 12px; opacity: 0.8; margin-top: 5px;">${craftedHistory.length} crafts</div>
+      </div>
+    </div>
+
+    <!-- Top Crafts -->
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 25px; border-radius: 12px; border: 1px solid #3a3a3a; margin-bottom: 30px;">
+      <h3 style="color: #f4a460; margin: 0 0 20px 0;">🏆 Top Money Makers</h3>
+      <div style="display: grid; gap: 12px;">
+        ${topCrafts.map((craft, index) => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(244, 164, 96, 0.05); border-radius: 8px; border: 1px solid rgba(244, 164, 96, 0.2);">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div style="font-size: 24px;">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅'}</div>
+              <div>
+                <div style="font-weight: bold; color: #e0e0e0;">${craft.name}</div>
+                <div style="font-size: 13px; color: #888;">Crafted ${craft.count}x</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 18px; font-weight: bold; color: #4ade80;">₽${craft.profit.toLocaleString()}</div>
+              <div style="font-size: 12px; color: #888;">total profit</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 25px; border-radius: 12px; border: 1px solid #3a3a3a;">
+      <h3 style="color: #f4a460; margin: 0 0 20px 0;">📋 Recent Activity</h3>
+      <div style="display: grid; gap: 10px;">
+        ${recentCrafts.map(craft => {
+          const date = new Date(craft.timestamp);
+          const timeAgo = getTimeAgo(date);
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+              <div>
+                <div style="font-weight: bold; color: #e0e0e0;">${craft.name}</div>
+                <div style="font-size: 12px; color: #888;">${craft.stationName} • ${timeAgo}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: bold; color: ${craft.profit >= 0 ? '#4ade80' : '#f87171'}">
+                  ${craft.profit >= 0 ? '+' : ''}₽${craft.profit.toLocaleString()}
+                </div>
+                <div style="font-size: 11px; color: #888;">${formatCraftTime(craft.craftTime)}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
+function getTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString();
+}
+
+function clearAllStats() {
+  if (!confirm('Are you sure you want to delete ALL tracked crafts? This cannot be undone!')) return;
+  
+  craftedHistory = [];
+  saveCraftedHistory();
+  renderStats();
 }
 
 window.addEventListener('DOMContentLoaded', init);
