@@ -1366,4 +1366,115 @@ function renderCalculatorResults(results, bestOverall, hours) {
   container.innerHTML = html;
 }
 
+function calculateOfflineCrafts() {
+  const hours = parseFloat(document.getElementById('offlineHoursInput').value) || 8;
+  const totalMinutes = hours * 60;
+  
+  const results = [];
+  
+  stations.forEach(station => {
+    const stationCrafts = crafts[station.id] || [];
+    if (stationCrafts.length === 0) return;
+    
+    // Get crafts that are 1+ hours and profitable
+    const longCrafts = stationCrafts.filter(craft => {
+      const profit = craft.sellPrice - craft.materialCost;
+      return profit > 0 && craft.craftTime >= 60; // 1+ hour crafts
+    });
+    
+    if (longCrafts.length === 0) return;
+    
+    // Sort by profit per hour (descending)
+    longCrafts.sort((a, b) => {
+      const profitPerHourA = ((a.sellPrice - a.materialCost) / a.craftTime) * 60;
+      const profitPerHourB = ((b.sellPrice - b.materialCost) / b.craftTime) * 60;
+      return profitPerHourB - profitPerHourA;
+    });
+    
+    // Best long craft for this station
+    const bestCraft = longCrafts[0];
+    const timesCanCraft = Math.floor(totalMinutes / bestCraft.craftTime);
+    
+    if (timesCanCraft === 0) return; // Can't even craft once
+    
+    const totalTime = timesCanCraft * bestCraft.craftTime;
+    const profitPerCraft = bestCraft.sellPrice - bestCraft.materialCost;
+    const totalProfit = profitPerCraft * timesCanCraft;
+    const profitPerHour = (totalProfit / totalTime) * 60;
+    
+    results.push({
+      station: station,
+      craft: bestCraft,
+      quantity: timesCanCraft,
+      totalTime: totalTime,
+      totalProfit: totalProfit,
+      profitPerHour: profitPerHour
+    });
+  });
+  
+  // Sort by total profit (descending)
+  results.sort((a, b) => b.totalProfit - a.totalProfit);
+  
+  // Render results
+  renderOfflineResults(results, hours);
+}
+
+function renderOfflineResults(results, hours) {
+  const container = document.getElementById('offlineResults');
+  
+  if (results.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <p>No long crafts (1+ hour) found. Try checking back when API data loads!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = `
+    <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 25px; border-radius: 12px; border: 1px solid #6366f1; margin-top: 30px;">
+      <h3 style="color: #818cf8; margin: 0 0 20px 0; font-size: 20px;">💤 BEST OFFLINE CRAFTS (${hours} hours AFK)</h3>
+      <div style="display: grid; gap: 15px;">
+  `;
+  
+  results.forEach((result, index) => {
+    const isTop = index < 3; // Highlight top 3
+    html += `
+      <div style="padding: 20px; background: ${isTop ? 'rgba(99, 102, 241, 0.15)' : 'rgba(0,0,0,0.3)'}; border-radius: 8px; border: 2px solid ${isTop ? '#6366f1' : '#374151'}; position: relative;">
+        ${index === 0 ? '<div style="position: absolute; top: 10px; right: 10px; background: #6366f1; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">👑 TOP PICK</div>' : ''}
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;">
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #818cf8;">${result.station.name}</div>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #e0e0e0; font-size: 16px;">${result.craft.name} x${result.quantity}</div>
+            <div style="font-size: 13px; color: #888; margin-top: 4px;">
+              ${formatCraftTime(result.craft.craftTime)} each • ${formatCraftTime(result.totalTime)} total
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 11px; color: #888;">Total Profit</div>
+            <div style="font-size: 18px; font-weight: bold; color: #4ade80;">₽${Math.round(result.totalProfit).toLocaleString()}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 11px; color: #888;">Profit/Hour</div>
+            <div style="font-size: 18px; font-weight: bold; color: #818cf8;">₽${Math.round(result.profitPerHour).toLocaleString()}/h</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+      <div style="margin-top: 20px; padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; text-align: center;">
+        <div style="color: #818cf8; font-size: 14px; font-weight: bold; margin-bottom: 5px;">😴 Perfect for sleeping or being away from the game</div>
+        <div style="color: #888; font-size: 12px;">Set these up before you log off for maximum passive profit!</div>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
+
 window.addEventListener('DOMContentLoaded', init);
