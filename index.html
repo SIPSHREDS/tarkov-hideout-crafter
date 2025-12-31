@@ -705,6 +705,7 @@
     <div class="header-controls">
       <button class="theme-toggle" onclick="showCalculatorView()" style="margin-right: 10px;">📊 Craft Planner</button>
       <button class="theme-toggle" onclick="showStatsView()" style="margin-right: 10px;">📈 My Stats</button>
+      <button class="theme-toggle" onclick="showHelpModal()" style="margin-right: 10px;">❓ Help</button>
       <button class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
     </div>
   </div>
@@ -863,6 +864,98 @@
     <div id="statsContent"></div>
   </div>
 
-  <script src="renderer.js"></script>
+  <!-- HELP MODAL -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <button onclick="closeHelpModal()" style="position: absolute; top: 10px; right: 10px; background: #dc2626; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+      
+      <div style="text-align: center; margin-bottom: 25px;">
+        <h2 style="color: #f4a460; font-size: 28px; margin-bottom: 10px;">❓ Help & Features Guide</h2>
+        <p style="color: #888; font-size: 14px;">Everything you need to know about Tarkov Hideout Crafter</p>
+      </div>
+
+      <div style="display: grid; gap: 20px;">
+        <!-- Feature 1 -->
+        <div style="padding: 20px; background: rgba(244, 164, 96, 0.1); border-radius: 8px; border-left: 4px solid #f4a460;">
+          <h3 style="color: #f4a460; margin: 0 0 10px 0; font-size: 18px;">🔥 Hot Deals Dashboard</h3>
+          <p style="color: #e0e0e0; margin: 0 0 8px 0; line-height: 1.6;">See the most profitable crafts RIGHT NOW on the main station page.</p>
+          <ul style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>💰 Best Profit/Hour - Top 3 most profitable</li>
+            <li>⚡ Quick Money - Fast crafts under 1 hour</li>
+            <li>💎 Passive Income - Long crafts for AFK</li>
+            <li>Click any craft to jump to that station</li>
+          </ul>
+        </div>
+
+        <!-- Feature 2 -->
+        <div style="padding: 20px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; border-left: 4px solid #6366f1;">
+          <h3 style="color: #818cf8; margin: 0 0 10px 0; font-size: 18px;">📊 Price History Charts</h3>
+          <p style="color: #e0e0e0; margin: 0 0 8px 0; line-height: 1.6;">Track price trends over time like a stock market.</p>
+          <ul style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>Click any craft name → see price history</li>
+            <li>7-day line graphs with trends (📈📉)</li>
+            <li>Shows: Highest, Average, Lowest profit/hour</li>
+            <li>Auto-tracks prices daily in background</li>
+          </ul>
+        </div>
+
+        <!-- Feature 3 -->
+        <div style="padding: 20px; background: rgba(244, 164, 96, 0.1); border-radius: 8px; border-left: 4px solid #f4a460;">
+          <h3 style="color: #f4a460; margin: 0 0 10px 0; font-size: 18px;">📊 Craft Planner</h3>
+          <p style="color: #e0e0e0; margin: 0 0 8px 0; line-height: 1.6;">Calculate the best crafts based on your available time.</p>
+          <ul style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>⚡ Active Play - "I have 3 hours to play"</li>
+            <li>💤 Offline Crafts - "I'll be AFK for 8 hours"</li>
+            <li>Shows best craft for EACH station</li>
+            <li>Calculates exact quantities and profit</li>
+          </ul>
+        </div>
+
+        <!-- Feature 4 -->
+        <div style="padding: 20px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; border-left: 4px solid #4ade80;">
+          <h3 style="color: #4ade80; margin: 0 0 10px 0; font-size: 18px;">📈 My Stats (Profit Tracker)</h3>
+          <p style="color: #e0e0e0; margin: 0 0 8px 0; line-height: 1.6;">Track your actual profits and see which crafts make you the most money.</p>
+          <ul style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>Click "✓ Crafted" button when you complete a craft</li>
+            <li>See Today/Week/Month/AllTime profits</li>
+            <li>🏆 Top Money Makers leaderboard</li>
+            <li>📋 Recent Activity log</li>
+          </ul>
+        </div>
+
+        <!-- Feature 5 -->
+        <div style="padding: 20px; background: rgba(251, 146, 60, 0.1); border-radius: 8px; border-left: 4px solid #fb923c;">
+          <h3 style="color: #fb923c; margin: 0 0 10px 0; font-size: 18px;">🔥 Live API Integration</h3>
+          <p style="color: #e0e0e0; margin: 0 0 8px 0; line-height: 1.6;">Real-time flea market prices updated automatically.</p>
+          <ul style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+            <li>🟢 = Live API price (most crafts)</li>
+            <li>🟡 = Manual price (if API unavailable)</li>
+            <li>Click "🔄 Refresh Data" to update prices</li>
+            <li>Material breakdowns show item costs</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border-radius: 8px; text-align: center;">
+        <p style="color: #1a1a1a; font-weight: bold; margin: 0 0 10px 0;">💡 Pro Tip</p>
+        <p style="color: #1a1a1a; margin: 0; font-size: 14px;">Use "Hot Deals" to find opportunities, "Craft Planner" to optimize your time, and "My Stats" to track progress!</p>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <label style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #888; font-size: 14px; cursor: pointer;">
+          <input type="checkbox" id="dontShowHelpAgain" style="cursor: pointer;">
+          Don't show this automatically again
+        </label>
+      </div>
+
+      <div style="text-align: center; margin-top: 20px;">
+        <button onclick="closeHelpModal()" style="padding: 12px 30px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border: none; border-radius: 6px; color: #1a1a1a; font-weight: bold; cursor: pointer; font-size: 16px;">
+          Got It! Let's Go 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js?v=2.1"></script>
 </body>
 </html>
