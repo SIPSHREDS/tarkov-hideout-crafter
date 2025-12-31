@@ -768,6 +768,7 @@ function dismissUpdateNotification() {
 function showStationView() {
   document.getElementById('stationView').classList.remove('hidden');
   document.getElementById('craftsView').classList.add('hidden');
+  document.getElementById('calculatorView').classList.add('hidden');
   currentStation = null;
   currentFilter = 'all';
   compareMode = false;
@@ -778,6 +779,7 @@ function showCraftsView(stationId) {
   currentStation = stationId;
   document.getElementById('stationView').classList.add('hidden');
   document.getElementById('craftsView').classList.remove('hidden');
+  document.getElementById('calculatorView').classList.add('hidden');
   currentFilter = 'all';
   
   // Reset filter buttons
@@ -1204,6 +1206,164 @@ function deleteCraft(craftId) {
   crafts[currentStation] = crafts[currentStation].filter(c => c.id !== craftId);
   saveCrafts();
   applyFilter();
+}
+
+// ====== CALCULATOR FUNCTIONS ======
+
+function showCalculatorView() {
+  document.getElementById('stationView').classList.add('hidden');
+  document.getElementById('craftsView').classList.add('hidden');
+  document.getElementById('calculatorView').classList.remove('hidden');
+  
+  // Auto-calculate on view
+  calculateOptimalCrafts();
+}
+
+function calculateOptimalCrafts() {
+  const hours = parseFloat(document.getElementById('hoursInput').value) || 3;
+  const totalMinutes = hours * 60;
+  
+  const results = [];
+  let bestOverall = null;
+  
+  stations.forEach(station => {
+    const stationCrafts = crafts[station.id] || [];
+    if (stationCrafts.length === 0) return;
+    
+    // Get all profitable crafts
+    const profitable = stationCrafts.filter(craft => {
+      const profit = craft.sellPrice - craft.materialCost;
+      return profit > 0 && craft.craftTime > 0;
+    });
+    
+    if (profitable.length === 0) return;
+    
+    // Sort by profit per hour (descending)
+    profitable.sort((a, b) => {
+      const profitPerHourA = ((a.sellPrice - a.materialCost) / a.craftTime) * 60;
+      const profitPerHourB = ((b.sellPrice - b.materialCraft) / b.craftTime) * 60;
+      return profitPerHourB - profitPerHourA;
+    });
+    
+    // Best craft for this station
+    const bestCraft = profitable[0];
+    const timesCanCraft = Math.floor(totalMinutes / bestCraft.craftTime);
+    
+    if (timesCanCraft === 0) return; // Can't even craft once
+    
+    const totalTime = timesCanCraft * bestCraft.craftTime;
+    const profitPerCraft = bestCraft.sellPrice - bestCraft.materialCost;
+    const totalProfit = profitPerCraft * timesCanCraft;
+    const profitPerHour = (totalProfit / totalTime) * 60;
+    
+    const result = {
+      station: station,
+      craft: bestCraft,
+      quantity: timesCanCraft,
+      totalTime: totalTime,
+      totalProfit: totalProfit,
+      profitPerHour: profitPerHour
+    };
+    
+    results.push(result);
+    
+    // Track best overall
+    if (!bestOverall || profitPerHour > bestOverall.profitPerHour) {
+      bestOverall = result;
+    }
+  });
+  
+  // Render results
+  renderCalculatorResults(results, bestOverall, hours);
+}
+
+function renderCalculatorResults(results, bestOverall, hours) {
+  const container = document.getElementById('calculatorResults');
+  
+  if (results.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: #888;">
+        <p>No profitable crafts found. Make sure API data is loaded!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  
+  // Best Overall Section
+  if (bestOverall) {
+    html += `
+      <div style="background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); padding: 25px; border-radius: 12px; margin-bottom: 30px; color: #1a1a1a; box-shadow: 0 6px 12px rgba(244, 164, 96, 0.4);">
+        <h3 style="margin: 0 0 15px 0; font-size: 24px; display: flex; align-items: center;">
+          🏆 BEST OVERALL CHOICE
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Station</div>
+            <div style="font-size: 18px; font-weight: bold;">${bestOverall.station.name}</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Craft</div>
+            <div style="font-size: 18px; font-weight: bold;">${bestOverall.craft.name} x${bestOverall.quantity}</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Total Profit</div>
+            <div style="font-size: 20px; font-weight: bold;">₽${Math.round(bestOverall.totalProfit).toLocaleString()}</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 5px;">Profit/Hour</div>
+            <div style="font-size: 20px; font-weight: bold;">₽${Math.round(bestOverall.profitPerHour).toLocaleString()}/h</div>
+          </div>
+        </div>
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(0,0,0,0.2); font-size: 14px;">
+          ⏰ Takes ${formatCraftTime(bestOverall.totalTime)} out of your ${hours} hour${hours !== 1 ? 's' : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  // All Stations Section
+  html += `
+    <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 25px; border-radius: 12px; border: 1px solid #3a3a3a;">
+      <h3 style="color: #f4a460; margin: 0 0 20px 0; font-size: 20px;">📋 BEST CRAFT PER STATION</h3>
+      <div style="display: grid; gap: 15px;">
+  `;
+  
+  results.forEach(result => {
+    const isBest = bestOverall && result.station.id === bestOverall.station.id;
+    html += `
+      <div style="padding: 20px; background: ${isBest ? 'rgba(244, 164, 96, 0.1)' : 'rgba(0,0,0,0.3)'}; border-radius: 8px; border: 2px solid ${isBest ? '#f4a460' : '#3a3a3a'}; position: relative;">
+        ${isBest ? '<div style="position: absolute; top: 10px; right: 10px; background: #f4a460; color: #1a1a1a; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">🏆 BEST</div>' : ''}
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 15px; align-items: center;">
+          <div>
+            <div style="font-size: 18px; font-weight: bold; color: #f4a460;">${result.station.name}</div>
+          </div>
+          <div>
+            <div style="font-weight: bold; color: #e0e0e0; font-size: 16px;">${result.craft.name} x${result.quantity}</div>
+            <div style="font-size: 13px; color: #888; margin-top: 4px;">
+              ${formatCraftTime(result.craft.craftTime)} each • ${formatCraftTime(result.totalTime)} total
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 11px; color: #888;">Total Profit</div>
+            <div style="font-size: 18px; font-weight: bold; color: #4ade80;">₽${Math.round(result.totalProfit).toLocaleString()}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 11px; color: #888;">Profit/Hour</div>
+            <div style="font-size: 18px; font-weight: bold; color: #4ade80;">₽${Math.round(result.profitPerHour).toLocaleString()}/h</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
 }
 
 window.addEventListener('DOMContentLoaded', init);
