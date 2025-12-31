@@ -685,10 +685,136 @@
       .header {
         flex-direction: column;
         gap: 15px;
+        padding: 20px 15px;
+      }
+      
+      .header-left {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+      }
+      
+      .header-left > div h1 {
+        font-size: 24px;
+      }
+      
+      .header-controls {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        justify-content: center;
+      }
+      
+      .theme-toggle {
+        font-size: 13px;
+        padding: 10px 8px;
+        margin-right: 0 !important;
+        white-space: nowrap;
       }
       
       .stations-grid {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+      
+      /* Hot Deals on mobile */
+      .hot-deals-widget > div:first-child {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Calculator mobile */
+      #hoursInput, #offlineHoursInput {
+        width: 100px !important;
+        font-size: 20px !important;
+      }
+      
+      /* Stats cards mobile */
+      .stats-summary-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+      
+      /* Modal on mobile */
+      .modal-content {
+        width: 95% !important;
+        max-width: 95% !important;
+        padding: 20px !important;
+        max-height: 90vh !important;
+      }
+      
+      /* Help modal font sizes */
+      .modal-content h2 {
+        font-size: 22px !important;
+      }
+      
+      .modal-content h3 {
+        font-size: 16px !important;
+      }
+      
+      /* Table horizontal scroll */
+      .table-container {
+        overflow-x: auto;
+      }
+      
+      table {
+        min-width: 800px;
+      }
+      
+      /* Craft planner results */
+      .calculator-result-card {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      
+      .calculator-best-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+      
+      /* Back button */
+      .back-button {
+        font-size: 12px;
+        padding: 10px 15px;
+      }
+      
+      /* Action buttons in table */
+      .edit-btn, .delete-btn {
+        font-size: 11px;
+        padding: 5px 8px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      /* Extra small phones */
+      h1 {
+        font-size: 22px !important;
+      }
+      
+      .subtitle {
+        font-size: 12px !important;
+      }
+      
+      .theme-toggle {
+        font-size: 11px;
+        padding: 6px 10px;
+      }
+      
+      .stations-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Stats cards - stack vertically */
+      .stats-summary-grid {
+        grid-template-columns: 1fr !important;
+      }
+      
+      /* Calculator inputs */
+      #hoursInput, #offlineHoursInput {
+        width: 80px !important;
+        font-size: 18px !important;
+        padding: 10px !important;
+      }
+      
+      button {
+        font-size: 13px !important;
       }
     }
   </style>
@@ -956,6 +1082,6 @@
     </div>
   </div>
 
-  <script src="renderer.js?v=2.1"></script>
+  <script src="renderer.js?v=2.4"></script>
 </body>
 </html>
