@@ -996,12 +996,72 @@
 
   <!-- KAPPA TRACKER VIEW -->
   <div id="kappaView" class="hidden">
-    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-      <button class="back-button" onclick="showStationView()">← Back to Stations</button>
-      <h2 style="color: #f4a460; margin: 0;">🎯 Kappa Container Tracker</h2>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="back-button" onclick="showStationView()">← Back to Stations</button>
+        <h2 style="color: #f4a460; margin: 0;">🎯 Kappa Container Tracker</h2>
+      </div>
+      <button onclick="showJsonUploadModal()" style="padding: 10px 20px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer;">
+        📁 Import from profile.json
+      </button>
     </div>
 
     <div id="kappaContent"></div>
+  </div>
+
+  <!-- JSON UPLOAD MODAL -->
+  <div id="jsonUploadModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <button onclick="closeJsonUploadModal()" style="position: absolute; top: 10px; right: 10px; background: #dc2626; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+      
+      <div style="text-align: center; margin-bottom: 25px;">
+        <div style="font-size: 48px; margin-bottom: 15px;">📁</div>
+        <h2 style="color: #f4a460; font-size: 24px; margin-bottom: 10px;">Import from profile.json</h2>
+        <p style="color: #888; font-size: 14px;">Auto-fill your quest progress from your Tarkov profile</p>
+      </div>
+
+      <div style="background: rgba(244, 164, 96, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #f4a460;">
+        <h4 style="color: #f4a460; margin: 0 0 15px 0; font-size: 16px;">🔒 100% Privacy Protected</h4>
+        <div style="color: #e0e0e0; font-size: 14px; line-height: 1.8; text-align: left;">
+          ✅ Processed entirely in your browser<br>
+          ✅ No server upload<br>
+          ✅ Nothing tracked online<br>
+          ✅ Your data stays on your device<br>
+          ✅ Works offline
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <p style="color: #888; font-size: 14px; margin-bottom: 15px; text-align: center;">Upload your profile.json file:</p>
+        <p style="color: #666; font-size: 12px; margin-bottom: 20px; text-align: center;">
+          📁 Location: <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; color: #f4a460;">C:\Battlestate Games\EFT\Profiles\[ProfileID]\profile.json</code>
+        </p>
+        <div style="text-align: center;">
+          <input type="file" id="profileUpload" accept=".json" style="display: none;" onchange="handleProfileUpload(event)">
+          <button onclick="document.getElementById('profileUpload').click()" 
+                  style="padding: 15px 40px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border: none; border-radius: 8px; color: #1a1a1a; font-weight: bold; cursor: pointer; font-size: 16px;">
+            📁 Choose Profile File
+          </button>
+        </div>
+      </div>
+
+      <div style="color: #666; font-size: 13px; line-height: 1.6;">
+        <p style="margin-bottom: 10px; text-align: center;"><strong>How to find your profile.json:</strong></p>
+        <ol style="text-align: left; max-width: 500px; margin: 0 auto; color: #888; line-height: 2;">
+          <li>Close Tarkov completely</li>
+          <li>Navigate to your EFT installation folder</li>
+          <li>Open: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 3px;">Profiles → [Your Profile ID]</code></li>
+          <li>Find "profile.json" file</li>
+          <li>Upload it here!</li>
+        </ol>
+      </div>
+
+      <div style="margin-top: 25px; padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; text-align: center;">
+        <p style="color: #818cf8; font-size: 13px; margin: 0;">
+          💡 <strong>Note:</strong> Only ~60 quest IDs are currently mapped. Manual tracking recommended for complete accuracy.
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- HELP MODAL -->
@@ -1074,6 +1134,53 @@
             <li>Material breakdowns show item costs</li>
           </ul>
         </div>
+
+        <!-- Feature 6: Kappa Tracker -->
+        <div style="padding: 20px; background: rgba(244, 164, 96, 0.1); border-radius: 8px; border-left: 4px solid #f4a460;">
+          <h3 style="color: #f4a460; margin: 0 0 10px 0; font-size: 18px;">🎯 Kappa Container Tracker</h3>
+          <p style="color: #e0e0e0; margin: 0 0 12px 0; line-height: 1.6;">Track all 256 quests needed for Kappa! Choose your method:</p>
+          
+          <div style="margin-bottom: 15px;">
+            <p style="color: #4ade80; font-weight: bold; margin: 0 0 8px 0; font-size: 15px;">✅ Method 1: Manual Tracking (Recommended)</p>
+            <ol style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+              <li>Click "🎯 Kappa" button in header</li>
+              <li>See all 256 quests organized by trader</li>
+              <li>Check boxes as you complete quests</li>
+              <li>Watch your progress grow!</li>
+              <li>Saves automatically to your browser</li>
+            </ol>
+          </div>
+
+          <div style="margin-bottom: 15px;">
+            <p style="color: #818cf8; font-weight: bold; margin: 0 0 8px 0; font-size: 15px;">📁 Method 2: Import from profile.json</p>
+            <ol style="color: #888; font-size: 14px; margin: 0; padding-left: 20px; line-height: 1.8;">
+              <li>Click "🎯 Kappa" button</li>
+              <li>Click "📁 Import from profile.json" (top right)</li>
+              <li>Find your profile file at:<br>
+                  <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; font-size: 12px;">C:\Battlestate Games\EFT\Profiles\[ID]\profile.json</code>
+              </li>
+              <li>Upload the file</li>
+              <li>~60 quests auto-check</li>
+              <li>Manually check remaining quests</li>
+            </ol>
+          </div>
+
+          <div style="background: rgba(99, 102, 241, 0.15); padding: 12px; border-radius: 6px; margin-top: 12px;">
+            <p style="color: #818cf8; font-size: 13px; margin: 0; line-height: 1.6;">
+              <strong>🔒 Privacy Protected:</strong> Profile files are processed 100% in your browser. Nothing is uploaded to any server. Your data stays on your device!
+            </p>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <p style="color: #e0e0e0; font-size: 14px; margin: 0 0 5px 0;"><strong>Includes:</strong></p>
+            <ul style="color: #888; font-size: 13px; margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li>255 regular quests (all traders)</li>
+              <li>43 Collector items checklist</li>
+              <li>Progress tracking (X/256)</li>
+              <li>Per-trader completion stats</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); border-radius: 8px; text-align: center;">
@@ -1096,6 +1203,6 @@
     </div>
   </div>
 
-  <script src="renderer.js?v=3.0.1767329892"></script>
+  <script src="renderer.js?v=3.2.1767333444"></script>
 </body>
 </html>
