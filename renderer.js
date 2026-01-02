@@ -495,6 +495,7 @@ function init() {
   loadCrafts();
   loadPriceHistory();
   loadCraftedHistory();
+  loadKappaProgress();
   renderStations();
   
   // Check if first-time user
@@ -781,6 +782,7 @@ function showStationView() {
   document.getElementById('craftsView').classList.add('hidden');
   document.getElementById('calculatorView').classList.add('hidden');
   document.getElementById('statsView').classList.add('hidden');
+  document.getElementById('kappaView').classList.add('hidden');
   currentStation = null;
   currentFilter = 'all';
   compareMode = false;
@@ -793,6 +795,7 @@ function showCraftsView(stationId) {
   document.getElementById('craftsView').classList.remove('hidden');
   document.getElementById('calculatorView').classList.add('hidden');
   document.getElementById('statsView').classList.add('hidden');
+  document.getElementById('kappaView').classList.add('hidden');
   currentFilter = 'all';
   
   // Reset filter buttons
@@ -1230,6 +1233,7 @@ function showCalculatorView() {
   document.getElementById('craftsView').classList.add('hidden');
   document.getElementById('calculatorView').classList.remove('hidden');
   document.getElementById('statsView').classList.add('hidden');
+  document.getElementById('kappaView').classList.add('hidden');
   
   // Auto-calculate on view
   calculateOptimalCrafts();
@@ -1542,6 +1546,7 @@ function showStatsView() {
   document.getElementById('craftsView').classList.add('hidden');
   document.getElementById('calculatorView').classList.add('hidden');
   document.getElementById('statsView').classList.remove('hidden');
+  document.getElementById('kappaView').classList.add('hidden');
   
   renderStats();
 }
@@ -1685,6 +1690,174 @@ function clearAllStats() {
   craftedHistory = [];
   saveCraftedHistory();
   renderStats();
+}
+
+// ====== KAPPA TRACKER FUNCTIONS ======
+
+// Complete Kappa quest list - 255 regular quests + 43 Collector items
+const KAPPA_QUESTS_BY_TRADER = {
+  "Prapor": ["Shooting Cans","Debut","Luxurious Life","Search Mission","Background Check","Shootout Picnic","Delivery from the Past","BP Depot","The Bunker - Part 1","The Bunker - Part 2","Bad Rep Evidence","Ice Cream Cones","No Place for Renegades","Documents","Postman Pat - Part 1","Shaking up the Teller","The Punisher - Part 1","The Punisher - Part 2","The Punisher - Part 3","The Punisher - Part 4","The Punisher - Part 5","The Punisher - Part 6","Anesthesia","Grenadier","Test Drive - Part 1","Test Drive - Part 2","Test Drive - Part 3","Test Drive - Part 4","Test Drive - Part 5","Test Drive - Part 6","Perfect Mediator","Belka and Strelka","Polikhim Hobo","Regulated Materials","Big Customer / Out of Curiosity / Chemical Part 4","Intimidator","Easy Job - Part 1","Easy Job - Part 2","Reconnaissance","Possessor"],
+  "Therapist": ["First In Line","Shortage","Sanitary Standards - Part 1","Sanitary Standards - Part 2","Painkiller","Pharmacist","Car Repair","Disease History","Supply Plans / Kind of Sabotage","Health Care Privacy - Part 1","Health Care Privacy - Part 2","Health Care Privacy - Part 3","Health Care Privacy - Part 4","Health Care Privacy - Part 5","Health Care Privacy - Part 6","Athlete","Private Clinic","Decontamination Service","General Wares","Colleagues - Part 1","Colleagues - Part 2","Colleagues - Part 3","Postman Pat - Part 2","Crisis","Seaside Vacation","Lost Contact","Drug Trafficking","Shipment Tracking","Closer to the People","Abandoned Cargo","A Healthy Alternative","All Is Revealed"],
+  "Skier": ["Burning Rubber","Supplier","The Extortionist","Stirrup","What's on the Flash Drive?","Golden Swag","Chemical - Part 1","Chemical - Part 2","Chemical - Part 3","Vitamins - Part 1","Vitamins - Part 2","Friend from the West - Part 1","Friend from the West - Part 2","Informed Means Armed","Chumming","Setup","Flint","Lend-Lease - Part 1","Rigged Game","Safe Corridor","Private Club","Long Road","Missing Cargo","Exit Here","The Walls Have Eyes"],
+  "Peacekeeper": ["Fishing Gear","Tigr Safari","Scrap Metal","Eagle Eye","Humanitarian Supplies","The Cult - Part 1","The Cult - Part 2","Spa Tour - Part 1","Spa Tour - Part 2","Spa Tour - Part 3","Spa Tour - Part 4","Spa Tour - Part 5","Spa Tour - Part 6","Spa Tour - Part 7","Cargo X - Part 1","Cargo X - Part 2","Cargo X - Part 3","Wet Job - Part 1","Wet Job - Part 2","Wet Job - Part 3","Wet Job - Part 4","Wet Job - Part 5","Wet Job - Part 6","The Guide","Samples","TerraGroup Employee","Lend-Lease - Part 2","Peacekeeping Mission","Classified Technologies","Revision - Reserve","Cargo X - Part 4","Insomnia","Overpopulation","One Loose End","Revision - Lighthouse"],
+  "Mechanic": ["Gunsmith - Part 1","Gunsmith - Part 2","Gunsmith - Part 3","Gunsmith - Part 4","Gunsmith - Part 5","Gunsmith - Part 6","Gunsmith - Part 7","Gunsmith - Part 8","Gunsmith - Part 9","Gunsmith - Part 10","Gunsmith - Part 11","Gunsmith - Part 12","Gunsmith - Part 13","Gunsmith - Part 14","Gunsmith - Part 15","Gunsmith - Part 16","Gunsmith - Part 17","Gunsmith - Part 18","Gunsmith - Part 19","Gunsmith - Part 20","Gunsmith - Part 21","Gunsmith - Part 22","Signal - Part 1","Insider","Signal - Part 2","Scout","Black Swan","Forklift Certified","Capacity Check","Back Door","Surplus Goods","Signal - Part 3","Signal - Part 4","Farming - Part 1","Farming - Part 2","Bad Habit","Farming - Part 3","Farming - Part 4","Psycho Sniper","A Shooter Born in Heaven","Fertilizers","Passion for Ergonomics","Import","Chemistry Closet","Corporate Secrets","Energy Crisis","Broadcast - Part 1"],
+  "Ragman": ["Saving The Mole","Introduction","Make ULTRA Great Again","Big Sale","A Fuel Matter","Inventory Check","The Blood of War - Part 1","Dressed to Kill","Gratitude","Hot Delivery","Scavenger","Sales Night","Database - Part 1","Database - Part 2","Minibus","Sew it Good - Part 1","The Blood of War - Part 2","The Blood of War - Part 3","Sew it Good - Part 2","The Key to Success","No Fuss Needed","Supervisor","Sew it Good - Part 3","Living High is Not a Crime - Part 1","Living High is Not a Crime - Part 2","Sew it Good - Part 4","Charisma Brings Success","Break the Deal"],
+  "Jaeger": ["Only Business","Acquaintance","Rough Tarkov","Every Hunter Knows This","The Survivalist Path - Unprotected","The Survivalist Path - Thrifty","The Survivalist Path - Zhivchik","The Survivalist Path - Wounded Beast","The Survivalist Path - Tough Guy","Courtesy Visit","Nostalgia","The Survivalist Path - Junkie","The Survivalist Path - Eagle-Owl","The Survivalist Path - Combat Medic","Ambulance","The Huntsman Path - Secured Perimeter","Reserve","The Huntsman Path - Forest Cleaning","Claustrophobia","The Huntsman Path - Controller","The Huntsman Path - Evil Watchman","Fishing Place","The Huntsman Path - Trophy","The Huntsman Path - Justice","The Huntsman Path - Sadist","The Huntsman Path - Sellout","The Huntsman Path - Woods Keeper","Hunting Trip","The Huntsman Path - Factory Chief","The Huntsman Path - Eraser - Part 1","The Huntsman Path - Eraser - Part 2","The Tarkov Shooter - Part 1","The Tarkov Shooter - Part 2","The Tarkov Shooter - Part 3","The Tarkov Shooter - Part 4","The Tarkov Shooter - Part 5","The Tarkov Shooter - Part 6","The Tarkov Shooter - Part 7","The Tarkov Shooter - Part 8","Shady Business","Pest Control","The Hermit","The Huntsman Path - Outcasts","Stray Dogs","The Delicious Sausage","Dragnet","Work Smarter","Rite of Passage"]
+};
+
+const COLLECTOR_ITEMS = ["42 Signature Blend English Tea","Antique axe","Armband (Evasion)","Axel parrot figurine","Baddie's red beard","BakeEzy cook book","Battered antique book","BEAR Buddy plush toy","Can of Dr. Lupo's coffee beans","Can of RatCola soda","Can of sprats","Deadlyslob's beard oil","DRD body armor","Domontovich ushanka hat","Fake mustache","FireKlean gun lube","Gingy keychain","Glorious E lightweight armored mask","Golden 1GPhone smartphone","Golden egg","Golden rooster figurine","Inseq gas pipe wrench","Jar of DevilDog mayo","JohnB Liquid DNB glasses","Kotton beanie","Loot Lord plushie","LVNDMARK's rat poison","Missam forklift key","Mazoni golden dumbbell","Nut Sack balaclava","Old firesteel","Pestily plague mask","Press pass (issued for NoiceGuy)","Raven figurine","Shroud half-mask","Silver Badge","Smoke balaclava","Tamatthi kunai knife replica","Tigzresq splint","Veritas guitar pick","Viibiin sneaker","VHS","WZ Wallet"];
+
+let kappaProgress = {};
+
+function loadKappaProgress() {
+  const saved = localStorage.getItem('kappaProgress');
+  if (saved) {
+    kappaProgress = JSON.parse(saved);
+  }
+}
+
+function saveKappaProgress() {
+  localStorage.setItem('kappaProgress', JSON.stringify(kappaProgress));
+}
+
+function showKappaView() {
+  document.getElementById('stationView').classList.add('hidden');
+  document.getElementById('craftsView').classList.add('hidden');
+  document.getElementById('calculatorView').classList.add('hidden');
+  document.getElementById('statsView').classList.add('hidden');
+  document.getElementById('kappaView').classList.remove('hidden');
+  renderKappaTracker();
+}
+
+function toggleKappaQuest(trader, questName) {
+  const key = `${trader}:${questName}`;
+  kappaProgress[key] = !kappaProgress[key];
+  saveKappaProgress();
+  renderKappaTracker();
+}
+
+function toggleCollectorItem(itemName) {
+  const key = `Collector:${itemName}`;
+  kappaProgress[key] = !kappaProgress[key];
+  saveKappaProgress();
+  renderKappaTracker();
+}
+
+function renderKappaTracker() {
+  const container = document.getElementById('kappaContent');
+  
+  // Calculate progress
+  let totalQuests = 0;
+  let completedQuests = 0;
+  
+  Object.keys(KAPPA_QUESTS_BY_TRADER).forEach(trader => {
+    KAPPA_QUESTS_BY_TRADER[trader].forEach(quest => {
+      totalQuests++;
+      if (kappaProgress[`${trader}:${quest}`]) completedQuests++;
+    });
+  });
+  
+  let collectorCompleted = 0;
+  COLLECTOR_ITEMS.forEach(item => {
+    if (kappaProgress[`Collector:${item}`]) collectorCompleted++;
+  });
+  
+  const totalWithCollector = totalQuests + 1; // +1 for Collector quest itself
+  const completedWithCollector = completedQuests + (collectorCompleted === COLLECTOR_ITEMS.length ? 1 : 0);
+  const percentage = Math.round((completedWithCollector / totalWithCollector) * 100);
+  
+  let html = `
+    <div style="max-width: 1400px; margin: 0 auto;">
+      <!-- Progress Header -->
+      <div style="background: linear-gradient(135deg, #f4a460 0%, #d4844a 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: #1a1a1a; text-align: center;">
+        <h3 style="margin: 0 0 10px 0; font-size: 28px;">🎯 Kappa Container Progress</h3>
+        <div style="font-size: 48px; font-weight: bold; margin: 15px 0;">${completedWithCollector}/${totalWithCollector}</div>
+        <div style="font-size: 20px; margin-bottom: 15px;">${percentage}% Complete</div>
+        <div style="background: rgba(0,0,0,0.2); height: 35px; border-radius: 18px; overflow: hidden;">
+          <div style="background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%); height: 100%; width: ${percentage}%; transition: width 0.5s;"></div>
+        </div>
+        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 30px; font-size: 16px;">
+          <div><strong>Regular Quests:</strong> ${completedQuests}/${totalQuests}</div>
+          <div><strong>Collector Items:</strong> ${collectorCompleted}/${COLLECTOR_ITEMS.length}</div>
+        </div>
+        <button onclick="clearKappaProgress()" style="margin-top: 20px; padding: 10px 25px; background: rgba(0,0,0,0.3); border: none; border-radius: 6px; color: white; cursor: pointer; font-weight: bold;">
+          🗑️ Reset All Progress
+        </button>
+      </div>
+      
+      <!-- Quests by Trader -->
+      <div style="display: grid; gap: 20px; margin-bottom: 30px;">
+  `;
+  
+  Object.keys(KAPPA_QUESTS_BY_TRADER).forEach(trader => {
+    const quests = KAPPA_QUESTS_BY_TRADER[trader];
+    const traderCompleted = quests.filter(q => kappaProgress[`${trader}:${q}`]).length;
+    const traderPercentage = Math.round((traderCompleted / quests.length) * 100);
+    
+    html += `
+      <div style="background: linear-gradient(135deg, #2c2c2c 0%, #1f1f1f 100%); padding: 25px; border-radius: 12px; border: 2px solid ${traderCompleted === quests.length ? '#4ade80' : '#f4a460'};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="color: #f4a460; margin: 0;">${trader}</h3>
+          <div style="text-align: right;">
+            <div style="font-size: 18px; font-weight: bold; color: ${traderCompleted === quests.length ? '#4ade80' : '#e0e0e0'};">${traderCompleted}/${quests.length}</div>
+            <div style="font-size: 13px; color: #888;">${traderPercentage}%</div>
+          </div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+          <div style="background: linear-gradient(90deg, #f4a460 0%, #d4844a 100%); height: 100%; width: ${traderPercentage}%;"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;">
+          ${quests.map(quest => {
+            const checked = kappaProgress[`${trader}:${quest}`];
+            return `
+              <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${checked ? 'rgba(74, 222, 128, 0.15)' : 'rgba(0,0,0,0.3)'}; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='${checked ? 'rgba(74, 222, 128, 0.25)' : 'rgba(244, 164, 96, 0.1)'}'" onmouseout="this.style.background='${checked ? 'rgba(74, 222, 128, 0.15)' : 'rgba(0,0,0,0.3)'}'">
+                <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleKappaQuest('${trader}', '${quest.replace(/'/g, "\\'")}')" style="cursor: pointer; width: 18px; height: 18px;">
+                <span style="color: ${checked ? '#4ade80' : '#e0e0e0'}; ${checked ? 'text-decoration: line-through;' : ''}">${quest}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+  
+  // Collector Items Section
+  html += `
+    <div style="background: linear-gradient(135deg, #1f2937 0%, #111827 100%); padding: 25px; border-radius: 12px; border: 2px solid ${collectorCompleted === COLLECTOR_ITEMS.length ? '#4ade80' : '#6366f1'};">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="color: #818cf8; margin: 0;">🎁 Collector Quest Items</h3>
+        <div style="text-align: right;">
+          <div style="font-size: 18px; font-weight: bold; color: ${collectorCompleted === COLLECTOR_ITEMS.length ? '#4ade80' : '#e0e0e0'};">${collectorCompleted}/${COLLECTOR_ITEMS.length}</div>
+          <div style="font-size: 13px; color: #888;">${Math.round((collectorCompleted/COLLECTOR_ITEMS.length)*100)}%</div>
+        </div>
+      </div>
+      <div style="background: rgba(0,0,0,0.3); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 20px;">
+        <div style="background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%); height: 100%; width: ${Math.round((collectorCompleted/COLLECTOR_ITEMS.length)*100)}%;"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px;">
+        ${COLLECTOR_ITEMS.map(item => {
+          const checked = kappaProgress[`Collector:${item}`];
+          return `
+            <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${checked ? 'rgba(99, 102, 241, 0.25)' : 'rgba(0,0,0,0.3)'}; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='${checked ? 'rgba(99, 102, 241, 0.35)' : 'rgba(99, 102, 241, 0.1)'}'" onmouseout="this.style.background='${checked ? 'rgba(99, 102, 241, 0.25)' : 'rgba(0,0,0,0.3)'}'">
+              <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCollectorItem('${item.replace(/'/g, "\\'")}')" style="cursor: pointer; width: 18px; height: 18px;">
+              <span style="color: ${checked ? '#818cf8' : '#e0e0e0'}; ${checked ? 'text-decoration: line-through;' : ''}">${item}</span>
+            </label>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+  
+  html += `</div></div>`;
+  
+  container.innerHTML = html;
+}
+
+function clearKappaProgress() {
+  if (!confirm('Are you sure you want to reset ALL Kappa progress? This cannot be undone!')) return;
+  kappaProgress = {};
+  saveKappaProgress();
+  renderKappaTracker();
 }
 
 // ====== HELP MODAL FUNCTIONS ======
